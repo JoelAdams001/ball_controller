@@ -14,7 +14,51 @@
 #include <utility>
  
 using std::placeholders::_1;
- 
+
+cv::Point computeCentroid(const cv::Mat &mask) {
+	// find moments of the image
+	cv::Moments m = cv::moments(mask, true);
+		if( m.m00 <= 1e-4  )
+			return cv::Point(-1, -1);
+	return cv::Point(m.m10/m.m00, m.m01/m.m00);
+}
+
+cv::Mat createMask( const cv::Mat &image, 
+                    const cv::Scalar &lower,
+                    const cv::Scalar &upper,
+                    bool clean = true ) {
+	// Convert frame image from BGR to HSV color space
+	cv::Mat hsv, kernel;
+	cv::cvtColor(image, hsv, cv::COLOR_BGR2HSV);
+	// Create a mask using calibrated color
+    cv::Mat mask;
+    cv::inRange(hsv, lower, upper, mask);
+    if (clean) {
+        // Clean isolated pixels
+        cv::erode(mask, mask, kernel, cv::Point(-1,-1), 4);
+        // Enhance surviving pixels
+        cv::dilate(mask, mask, kernel, cv::Point(-1,-1), 4);
+    }
+    return mask;
+}
+
+cv::Point traceBall(const cv::Mat &image) {
+   // Define heu level of treshold color
+	int color = 46; // Some sort of lime color!!!
+	// Define lower and upper treshold color range
+	cv::Scalar lower(color - 20, 80, 80);
+	cv::Scalar upper(color + 20, 255, 255);
+	// Create mask	
+	auto mask = createMask(image, lower, upper);
+	// Compute center of the mask
+	return computeCentroid(mask);
+}
+
+long map(long x, long in_min, long in_max, long out_min, long out_max)
+ {
+  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
+}
+
 // Create the node class named PublishingSubscriber which inherits the attributes
 // and methods of the rclcpp::Node class.
 class TraceCommand : public rclcpp::Node
@@ -41,11 +85,16 @@ class TraceCommand : public rclcpp::Node
     // Receives the String message that is published over the topic
     void topic_callback(const sensor_msgs::msg::Image::SharedPtr msg) const
     {
+        //Working with the image
         cv_bridge::CvImagePtr image;
-        //image = cv_bridge::toCvCopy(msg,'BGR8');
-   //     image = cv_bridge::toCvCopy(msg);
+        image = cv_bridge::toCvCopy(msg);
+        cv::Point c =  traceBall(image->image);
+        std::cout << c << std::endl;
+        
+        //Creating the command velocity
         geometry_msgs::msg::Twist vel = geometry_msgs::msg::Twist();
-        vel.linear.x = 1.0;
+        float speed = map(c.y,0,300,0,2);
+        vel.linear.x = speed;
        
  
         publisher_->publish(std::move(vel));
