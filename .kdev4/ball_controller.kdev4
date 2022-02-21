@@ -1,0 +1,34 @@
+[CMake]
+Build Directory Count=1
+Current Build Directory Index-Host System=0
+
+[CMake][CMake Build Directory 0]
+Build Directory Path=/home/joel/dev_ws/build/ball_controller
+Build Type=\n
+CMake Binary=/usr/bin/cmake
+CMake Executable=/usr/bin/cmake
+Environment Profile=
+Extra Arguments=
+Install Directory=
+Runtime=Host System
+
+[Launch]
+Launch Configurations=Launch Configuration 0
+
+[Launch][Launch Configuration 0]
+Configured Launch Modes=execute
+Configured Launchers=nativeAppLauncher
+Name=trace_command
+Type=Native Application
+
+[Launch][Launch Configuration 0][Data]
+Arguments=
+Dependencies=@Variant(\x00\x00\x00\t\x00\x00\x00\x00\x01\x00\x00\x00\x0b\x00\x00\x00\x00\x02\x00\x00\x00\x1e\x00b\x00a\x00l\x00l\x00_\x00c\x00o\x00n\x00t\x00r\x00o\x00l\x00l\x00e\x00r\x00\x00\x00\x1a\x00t\x00r\x00a\x00c\x00e\x00_\x00c\x00o\x00m\x00m\x00a\x00n\x00d)
+Dependency Action=Build
+EnvironmentGroup=
+Executable=file:///home/joel/dev_ws/build/ball_controller/trace_command
+External Terminal=konsole --noclose --workdir %workdir -e %exe
+Project Target=ball_controller,trace_command
+Use External Terminal=false
+Working Directory=
+isExecutable=true
