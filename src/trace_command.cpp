@@ -46,15 +46,15 @@ cv::Point traceBall(const cv::Mat &image) {
    // Define heu level of treshold color
 	int color = 46; // Some sort of lime color!!!
 	// Define lower and upper treshold color range
-	cv::Scalar lower(color - 20, 80, 80);
-	cv::Scalar upper(color + 20, 255, 255);
+	cv::Scalar lower(color - 24, 127, 76);
+	cv::Scalar upper(color + 48, 182, 255);
 	// Create mask	
 	auto mask = createMask(image, lower, upper);
 	// Compute center of the mask
 	return computeCentroid(mask);
 }
 
-long map(long x, long in_min, long in_max, long out_min, long out_max)
+float map(float x, float in_min, float in_max, float out_min, float out_max)
  {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
@@ -77,7 +77,7 @@ class TraceCommand : public rclcpp::Node
              
       // Publisher publishes String messages to a topic named "addison2". 
       // The size of the queue is 10 messages.
-      publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_vel",10);
+      publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/demo/cmd_demo",10);
        
     }
  
@@ -89,11 +89,10 @@ class TraceCommand : public rclcpp::Node
         cv_bridge::CvImagePtr image;
         image = cv_bridge::toCvCopy(msg);
         cv::Point c =  traceBall(image->image);
-        std::cout << c << std::endl;
         
         //Creating the command velocity
         geometry_msgs::msg::Twist vel = geometry_msgs::msg::Twist();
-        float speed = map(c.y,0,300,0,2);
+        float speed = map(c.y,300,0,0,2);
         vel.linear.x = speed;
        
  
