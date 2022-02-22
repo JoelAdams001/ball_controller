@@ -1,10 +1,8 @@
 #include <functional> // Arithmetic, comparisons, and logical operations
 #include <memory> // Dynamic memory management
-// ROS Client Library for C++
-// Allows use of the most common elements of ROS 2
-#include "rclcpp/rclcpp.hpp"
+#include "rclcpp/rclcpp.hpp" //ROS
  
-// Built-in message type that will be used to publish data
+// Message data
 #include "sensor_msgs/msg/image.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 
@@ -54,59 +52,65 @@ cv::Point traceBall(const cv::Mat &image) {
 	return computeCentroid(mask);
 }
 
+//Map values from an input range to an output range
 float map(float x, float in_min, float in_max, float out_min, float out_max)
  {
   return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
-// Create the node class named PublishingSubscriber which inherits the attributes
-// and methods of the rclcpp::Node class.
+// Node class which contains both the publisher and subscriber
 class TraceCommand : public rclcpp::Node
 {
   public:
-    // Constructor creates a node named publishing_subscriber. 
-    // The published message count is initialized to 0.
+    // Constructor for creating and naming the node
     TraceCommand()
     : Node("trace_command")
     {
-      // Create the subscription.
-      // The topic_callback function executes whenever data is published
-      // to the 'image_raw' topic.
-      subscription_ = this->create_subscription<sensor_msgs::msg::Image>(
-      "image_raw", 10, std::bind(&TraceCommand::topic_callback, this, _1));
+        //Create subscriber
+        subscription_ = this->create_subscription<sensor_msgs::msg::Image>(
+        "image_raw", 10, std::bind(&TraceCommand::topic_callback, this, _1));
              
-      // Publisher publishes String messages to a topic named "addison2". 
-      // The size of the queue is 10 messages.
-      publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/demo/cmd_demo",10);
-       
+        //Create publisher
+        publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("/cmd_vel",10);
     }
  
   private:
-    // Receives the String message that is published over the topic
+    // Callback function that is entered everytime the subscriber recieves a message
     void topic_callback(const sensor_msgs::msg::Image::SharedPtr msg) const
     {
         //Working with the image
         cv_bridge::CvImagePtr image;
         image = cv_bridge::toCvCopy(msg);
         cv::Point c =  traceBall(image->image);
-        
+    
         //Creating the command velocity
-        geometry_msgs::msg::Twist vel = geometry_msgs::msg::Twist();
-        float speed = map(c.y,300,0,0,2);
-        vel.linear.x = speed;
+        float speed_lin;
+        float speed_ang;
+        auto vel = geometry_msgs::msg::Twist(); //command velocity message creation
+        
+        //If no ball is detected, no speed, otherwise map the y-axis coordinate to the speed
+        if ((c.x == -1) & (c.y == -1)){
+            speed_lin = 0;
+            speed_ang = 0;
+        }
+        else{
+            speed_lin = map(c.y,300,-1,-1,2);
+            speed_ang = map(c.x,300,-1,-0.2,0.2);
+        }
+        vel.linear.x = speed_lin;
+        vel.angular.z = speed_ang;
        
- 
-        publisher_->publish(std::move(vel));
+        publisher_->publish(std::move(vel)); //Publish the velocity message
     }
     // Declare the subscription attribute
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr subscription_;
          
-    // Declaration of the publisher_ attribute      
+    // Declaration of the publisher attribute      
     rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr publisher_;
    
 };
  
-// Node execution starts here
+
 int main(int argc, char * argv[])
 {
   // Initialize ROS 2
@@ -115,6 +119,7 @@ int main(int argc, char * argv[])
   // Start processing data from the node as well as the callbacks
   auto node = std::make_shared<TraceCommand>();
   rclcpp::spin(node);
+  
   // Shutdown the node when finished
   rclcpp::shutdown();
   return 0;
